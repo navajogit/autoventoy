@@ -46,6 +46,9 @@ sudo chmod +x /usr/local/bin/autoventoy
 **Run it:** `autoventoy`
 
 **Get help with all the options:** `autoventoy -h`
+```
+curl -fsSL "https://raw.githubusercontent.com/navajogit/autoventoy/main/autoventoy" | bash -s -- -h
+```
 
 ---
 
