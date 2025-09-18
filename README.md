@@ -45,7 +45,7 @@ sudo chmod +x /usr/local/bin/autoventoy
 
 **Run it:** `autoventoy`
 
-**Get help:** `autoventoy -h`
+**Get help with all the options:** `autoventoy -h`
 
 ---
 
