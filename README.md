@@ -10,7 +10,9 @@ If you don’t want to clone or download anything locally, run the script straig
 
 **Use this one-liner:**
 
-`curl -fsSL "https://raw.githubusercontent.com/navajogit/autoventoy/main/autoventoy" | bash`
+```
+curl -fsSL "https://raw.githubusercontent.com/navajogit/autoventoy/main/autoventoy" | bash
+```
 
 **Notes:**
 - `-fsSL` makes `curl` fail fast and stay quiet on errors.
@@ -23,7 +25,8 @@ If you don’t want to clone or download anything locally, run the script straig
 
 Download the script to `/usr/local/bin` and make it executable:
 
-```sudo curl -fsSL -o /usr/local/bin/autoventoy "https://raw.githubusercontent.com/navajogit/autoventoy/main/autoventoy"`
+```
+sudo curl -fsSL -o /usr/local/bin/autoventoy "https://raw.githubusercontent.com/navajogit/autoventoy/main/autoventoy"
 
 sudo chmod +x /usr/local/bin/autoventoy
 ```
