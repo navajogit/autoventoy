@@ -9,7 +9,7 @@ MORE at: https://www.ventoy.net/
 
 **Normally installing Ventoy is a pain in the butt (the process isn’t obvious and the steps are clunky) BUT**: . This script is an auto-installer that makes it effortless — in just a few seconds you have Ventoy ready to go. After that, all you do is drag ISO files onto the stick.
 
-## Remote install (no cloning)
+## REMOTE RUN (no cloning)
 
 If you don’t want to clone or download anything locally, run the script straight from GitHub. You’ll still be asked to confirm the target USB before anything destructive happens.
 
@@ -24,7 +24,11 @@ curl -fsSL "https://raw.githubusercontent.com/navajogit/autoventoy/main/autovent
 ```
 curl -fsSL "https://raw.githubusercontent.com/navajogit/autoventoy/main/autoventoy" | bash -s -- --no-secure
 ```
+**MORE OPTIONS:**
 
+```
+curl -fsSL "https://raw.githubusercontent.com/navajogit/autoventoy/main/autoventoy" | bash -s -- -h
+```
 
 **Notes:**
 - `-fsSL` makes `curl` fail fast and stay quiet on errors.
@@ -33,7 +37,7 @@ curl -fsSL "https://raw.githubusercontent.com/navajogit/autoventoy/main/autovent
 
 ---
 
-## Local install (put the script in your PATH)
+## LOCAL INSTALL (put the script in your PATH)
 
 Download the script to `/usr/local/bin` and make it executable:
 
@@ -46,9 +50,6 @@ sudo chmod +x /usr/local/bin/autoventoy
 **Run it:** `autoventoy`
 
 **Get help with all the options:** `autoventoy -h`
-```
-curl -fsSL "https://raw.githubusercontent.com/navajogit/autoventoy/main/autoventoy" | bash -s -- -h
-```
 
 ---
 
