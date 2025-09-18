@@ -1,10 +1,11 @@
 # autoventoy — quick Ventoy installer for USB (Debian-like / Linux)
 Automatically install the latest Ventoy USB bootloader on a chosen USB stick.
 
-**Ventoy is a bootloader that gives your USB stick a big advantage over other boot tools**: 
-- you’re not locked to a single ISO image. Instead, you can copy as many ISOs as you want — Linux distros, Windows installers in different versions, recovery utilities — all at once.
+**Ventoy is an open source multi image bootloader that gives your USB stick a big advantage over other boot tools**: 
+- you’re not locked to a single ISO image. Instead, you can copy as many ISOs as you want — Linux distros, Windows installers in different versions, recovery utilities — all at once. ISO/WIM/IMG/VHD(x)/EFI files
 - At boot, Ventoy shows you an interactive menu where you just pick what you want to run or install.
 - **The best part:** the USB stick still works like a normal drive. You can keep your personal files and documents alongside the ISOs, so one device doubles as portable storage **and** a multi-boot installer.  
+MORE at: https://www.ventoy.net/
 
 **Normally installing Ventoy is a pain in the butt (the process isn’t obvious and the steps are clunky) BUT**: . This script is an auto-installer that makes it effortless — in just a few seconds you have Ventoy ready to go. After that, all you do is drag ISO files onto the stick.
 
@@ -114,8 +115,78 @@ Examples:
 
 - **Installing Ventoy formats the USB drive**. Everything on that drive will be erased.  
 - Updating with `-u` is usually safe, but **back up your files first** just in case.  
-- Ventoy changes the partition layout in a way that’s not trivial to undo. The official Ventoy documentation explains recovery methods on their site.  
 - Ventoy does **not** stop you from using the USB as normal storage. You can put ISO/WIM/IMG files in the root, and keep your other personal files in folders. You only gain extra bootable functionality.  
+- Ventoy changes the partition layout in a way that’s not trivial to undo. The official Ventoy documentation explains recovery methods on their site.  
+
+---
+
+## How to uninstall Ventoy from a USB stick
+
+Ventoy doesn’t really have an “uninstaller.” Once installed, it rewrites the partition table of the USB stick.  
+So if you just do a quick format, Ventoy will still be there. To completely remove it you need to wipe and recreate the partition table.  
+
+Here are a few methods:
+
+---
+
+### On Linux
+
+- **Using `dd` (low-level wipe)**  
+  Replace `/dev/sdX` with your USB device (double-check, this will erase everything).  
+
+  `sudo dd if=/dev/zero of=/dev/sdX bs=1M conv=notrunc,sync status=progress`
+
+  This writes zeros over the beginning of the drive, erasing Ventoy’s partition table. Afterward you can create a new partition with `gparted` or `fdisk`.  
+
+- **Using GParted (GUI tool)**  
+  1. Install gparted if you don’t have it: `sudo apt install gparted`  
+  2. Run `sudo gparted`  
+  3. Select your USB device from the dropdown in the top right.  
+  4. From the menu: `Device → Create Partition Table…` and pick `msdos` (MBR).  
+  5. Then create a new FAT32 partition using all available space.  
+  6. Apply changes.  
+
+---
+
+### On Windows
+
+- **Using Disk Management**  
+  1. Press `Win + R`, type `diskmgmt.msc`, press Enter.  
+  2. Find your USB drive in the list (be very careful to pick the right one).  
+  3. Right-click on each partition of the USB and choose **Delete Volume**.  
+  4. After all partitions are gone, right-click the unallocated space and choose **New Simple Volume**.  
+  5. Format it as FAT32 or exFAT.  
+
+- **Using a third-party tool (e.g. Rufus, MiniTool, AOMEI)**  
+  Tools like Rufus or MiniTool Partition Wizard can also wipe the USB and create a new partition table. Choose **MBR + FAT32** for maximum compatibility.  
+
+---
+### Removing the Ventoy Secure Boot key (explained simply)
+
+When you install Ventoy with the default Secure Boot option, the first time you boot from that USB your computer asks you to accept a Ventoy “key” (a small certificate).  
+This is normal and harmless — it’s just the way Secure Boot allows Ventoy to run.  
+
+But maybe later you decide you don’t want that key on your computer anymore.  
+Deleting it is easy — Ventoy provides a special ISO file just for that.  
+
+**Step by step (simple version):**
+1. Go to the official Ventoy site and download the ISO called something like *“Ventoy Secure Boot Key Removal”*.  
+2. Copy that ISO file onto your Ventoy USB stick (just like you copy movies or music).  
+3. Restart your computer and boot from the Ventoy USB stick.  
+4. In the Ventoy menu that appears, choose the ISO you just copied.  
+5. Follow the short instructions on screen.  
+
+That’s it — the Ventoy key will be removed from your computer’s Secure Boot list.  
+
+So in plain words: if you ever said “yes” to the Ventoy key when booting with Secure Boot on, and you want to undo that decision, you just boot Ventoy again with the special ISO and it cleans it up for you.
+
+
+---
+
+### TL;DR
+
+To “uninstall” Ventoy, you need to **wipe the partition table** and create a new one (usually MBR with FAT32). After that the USB stick is just a normal drive again.
+
 
 ---
 
