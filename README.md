@@ -13,11 +13,18 @@ MORE at: https://www.ventoy.net/
 
 If you don’t want to clone or download anything locally, run the script straight from GitHub. You’ll still be asked to confirm the target USB before anything destructive happens.
 
-**Use this one-liner:**
+**Use this one-liner (with default Secure Boot support enabled):**
 
 ```
 curl -fsSL "https://raw.githubusercontent.com/navajogit/autoventoy/main/autoventoy" | bash
 ```
+
+**Or use this one-liner (without Secure Boot support, skips the default `-s` option):**
+
+```
+curl -fsSL "https://raw.githubusercontent.com/navajogit/autoventoy/main/autoventoy" | bash -s -- --no-secure
+```
+
 
 **Notes:**
 - `-fsSL` makes `curl` fail fast and stay quiet on errors.
