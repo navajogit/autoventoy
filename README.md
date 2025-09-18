@@ -85,7 +85,13 @@ By default the script runs Ventoy with:
 
 - **Action: install (`-i`)** – this means the USB stick will be **completely formatted and Ventoy will be installed from scratch**. Any data on the stick will be erased. Use this when preparing a new Ventoy stick.  
 
-- **Secure Boot: ON (`-s`)** – this tells Ventoy to include **support for Secure Boot systems**. If Secure Boot is enabled on your computer, you’ll need to accept a Ventoy certificate the first time you boot. If Secure Boot is disabled, nothing breaks — the stick still boots fine. This default helps in situations where you can’t disable Secure Boot (e.g. BIOS password locked), so you can still boot Linux recovery tools or installers.  
+- **Secure Boot: ON (`-s`)** – this tells Ventoy to include **support for Secure Boot systems**.  
+  If Secure Boot is enabled on your computer, you’ll need to accept a Ventoy certificate the first time you boot.  
+  If Secure Boot is disabled, nothing breaks — the stick will still boot normally.  
+  This default is useful if you can’t disable Secure Boot (for example, when the BIOS is locked with a password), so you can still boot Linux recovery tools or live installers.  
+
+- **Note:** Ventoy itself works fine with Secure Boot, but after installing a Linux distribution on your hard drive, you will usually need to disable Secure Boot in the BIOS. Many Linux systems don’t run reliably with Secure Boot enabled on installed hardware.
+
 
 - **Partition table: MBR** – Ventoy will create an **MBR (Master Boot Record) partition table** on the USB.  
   - **Pros:** maximum compatibility with old BIOS systems and UEFI machines, works on most PCs.  
