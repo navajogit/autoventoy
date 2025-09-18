@@ -24,7 +24,7 @@ You’ll still be asked to confirm the target USB before anything destructive ha
     curl -fsSL "https://raw.githubusercontent.com/navajogit/autoventoy/main/autoventoy" | bash
 ```
 
-This installs Ventoy **with Secure Boot support** (`-s`). - Works even if Secure Boot is **enabled in BIOS/UEFI** (by default it's enabled on every hardware).
+This installs Ventoy **with Secure Boot support** (`-s`). - Works even if Secure Boot is **enabled in BIOS/UEFI** (By default, Secure Boot is enabled on most modern hardware).
 - On first boot you’ll just need to **accept the Ventoy key once**.  
 - After that, all ISOs boot normally, no BIOS changes required.  
 - If your PC already has Secure Boot disabled, the stick still works fine.
