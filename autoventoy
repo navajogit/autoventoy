@@ -1,0 +1,323 @@
+#!/usr/bin/env bash
+# autoventoy - V 1.0 install ventory flash drive on a usb stick.
+
+# 1) Attempts to download the latest Ventoy from GitHub → if no network, uses a local package (./, ~/Downloads)
+# 2) Extracts and locates Ventoy2Disk.sh by filename (without assuming the directory)
+# 3) Selects the USB flash drive via fzf (or automatically), then runs installation/update
+# Default: Secure Boot ON (-s)
+
+# This script is a universal Ventoy installer for Linux:
+# - It can fetch the newest release automatically (online-first, with offline fallback).
+# - It validates and extracts the package.
+# - It safely detects USB drives and forwards the proper options to Ventoy2Disk.sh.
+# - It supports interactive and automated modes (with confirmation, auto-device selection, custom options).
+
+# In short: it automates preparing a USB stick with Ventoy in a reliable and repeatable way.
+
+# MIT License
+
+# Copyright (c) 2025 CyberGhost & Navajo
+
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND...
+
+set -euo pipefail
+
+trap 'echo -e "\nAnulowano."; exit 130' INT TERM
+
+BOLD="\e[1m"; RESET="\e[0m"; NORMAL="\e[0m"
+INVERTED="\e[7m"; INVERTED_BOLD="\e[1;7m"
+GREEN="\e[1;32m"; GRAY="\e[38;5;245m"; YELLOW="\e[33m"
+RED="\e[31m"; RED_BOLD="\e[1;31m"; BLUE="\e[38;5;32m"
+
+show_help() {
+  local script_name; script_name=$(basename "$0")
+  echo -e ""
+  echo -e " ${INVERTED}USAGE:${RESET} ${BOLD}$script_name [OPTIONS]${RESET}\n"
+  echo -e " ${BOLD}OPERATION:${RESET}"
+  echo -e "   ${BOLD}$script_name${RESET} ${GRAY}Downloads latest Ventoy (online-first) or uses local tar.gz, picks USB via fzf, runs Ventoy2Disk.sh.${RESET}\n"
+  echo -e " ${BOLD}BASIC:${RESET}"
+  echo -e "   ${NORMAL}no option${RESET}          ${GRAY}Interactive install (-i); ${BOLD}Secure Boot ON (-s) by default${RESET}${GRAY}; MBR.${RESET}"
+  echo -e "   ${NORMAL}-u, --update${RESET}       ${GRAY}Update Ventoy (-u).${RESET}"
+  echo -e "   ${NORMAL}-I, --force${RESET}        ${GRAY}Force install (-I).${RESET}"
+  echo -e "   ${NORMAL}-h, --help${RESET}         ${GRAY}Show this help.${RESET}\n"
+  echo -e " ${BOLD}AUTOMATION:${RESET}"
+  echo -e "   ${NORMAL}-y, --yes${RESET}          ${GRAY}No confirmation (non-interactive).${RESET}"
+  echo -e "   ${NORMAL}-a, --auto${RESET}         ${GRAY}Auto-pick if only one USB disk (skip fzf).${RESET}"
+  echo -e "   ${NORMAL}-d, --device /dev/sdX${RESET} ${GRAY}Use this device directly (skip fzf).${RESET}\n"
+  echo -e " ${BOLD}VENTOY OPTIONS (forwarded):${RESET}"
+  echo -e "   ${NORMAL}--no-secure${RESET}        ${GRAY}Disable Secure Boot (default here: ON).${RESET}"
+  echo -e "   ${NORMAL}--gpt | --mbr${RESET}      ${GRAY}Partition style (default: MBR).${RESET}"
+  echo -e "   ${NORMAL}--reserve SIZE_MB${RESET}  ${GRAY}-r SIZE_MB (install only).${RESET}"
+  echo -e "   ${NORMAL}--label LABEL${RESET}      ${GRAY}-L LABEL (default: Ventoy).${RESET}\n"
+  echo -e " ${BOLD}ONLINE-FIRST & OFFLINE FALLBACK:${RESET}"
+  echo -e "   ${GRAY}1) Try GitHub latest -> 2) If failed, use local ${BOLD}ventoy-*-linux.tar.gz${RESET}${GRAY} in ${BOLD}./${RESET}${GRAY} or ${BOLD}~/Downloads${RESET}${GRAY}.${RESET}\n"
+  echo -e " ${BOLD}WARNING:${RESET}"
+  echo -e "   ${RED_BOLD}Install (-i/-I) formats the USB drive. All data on that drive will be lost.${RESET}\n"
+  exit 0
+}
+
+is_apt_like() {
+  if command -v apt-get >/dev/null 2>&1 || command -v apt >/dev/null 2>&1; then return 0; fi
+  if [[ -r /etc/os-release ]]; then
+    grep -qiE 'debian|ubuntu|linuxmint|pop|elementary|kali|raspbian' /etc/os-release && return 0
+  fi
+  return 1
+}
+
+offer_apt_install() {
+  local pkg="$1"
+  read -r -p "Missing '${pkg}'. Install with apt now? [y/N]: " ans
+  [[ "$ans" =~ ^[Yy]$ ]] || return 1
+  if command -v sudo >/dev/null 2>&1 && [[ $EUID -ne 0 ]]; then
+    sudo apt-get update && sudo apt-get install -y "$pkg"
+  else
+    apt-get update && apt-get install -y "$pkg"
+  fi
+}
+
+need_cmd() { command -v "$1" >/dev/null 2>&1; }
+ensure_cmd() {
+  local cmd="$1" pkg="${2:-$1}"
+  if need_cmd "$cmd"; then return 0; fi
+  if is_apt_like; then
+    echo "Missing '${cmd}'."
+    if offer_apt_install "$pkg"; then
+      need_cmd "$cmd" || { echo "Package '${pkg}' installed but '${cmd}' still not found."; exit 1; }
+      return 0
+    fi
+  fi
+  echo "Missing '${cmd}'. Please install it first${pkg:+ (e.g. apt install $pkg)}" >&2
+  exit 1
+}
+
+ensure_cmd lsblk util-linux
+ensure_cmd findmnt util-linux
+ensure_cmd awk awk
+ensure_cmd tar tar
+ensure_cmd grep grep
+ensure_cmd sed sed
+ensure_cmd cut coreutils
+ensure_cmd sort coreutils
+ensure_cmd find findutils
+ensure_cmd realpath coreutils
+if [[ $EUID -ne 0 ]]; then ensure_cmd sudo sudo; SUDO="sudo"; else SUDO=""; fi
+
+CMD="-i"
+CONFIRM=1
+AUTO=0
+TARGET_DEV=""
+SECURE=1
+STYLE="mbr"
+RESERVE=""
+LABEL=""
+
+while (( "$#" )); do
+  case "$1" in
+    -h|--help) show_help ;;
+    -u|--update) CMD="-u"; shift ;;
+    -I|--force)  CMD="-I"; shift ;;
+    -y|--yes)    CONFIRM=0; shift ;;
+    -a|--auto)   AUTO=1; shift ;;
+    -d|--device) TARGET_DEV="${2:-}"; [[ -z "$TARGET_DEV" ]] && { echo -e "${RED_BOLD}--device requires /dev/sdX${RESET}" >&2; exit 1; }; shift 2 ;;
+    --no-secure) SECURE=0; shift ;;
+    --gpt)       STYLE="gpt"; shift ;;
+    --mbr)       STYLE="mbr"; shift ;;
+    --reserve)   RESERVE="${2:-}"; [[ -z "$RESERVE" || ! "$RESERVE" =~ ^[0-9]+$ ]] && { echo -e "${RED_BOLD}--reserve requires integer SIZE_MB${RESET}" >&2; exit 1; }; shift 2 ;;
+    --label)     LABEL="${2:-}"; [[ -z "$LABEL" ]] && { echo -e "${RED_BOLD}--label requires value${RESET}" >&2; exit 1; }; shift 2 ;;
+    *) echo -e "${RED_BOLD}Unknown option:${RESET} $1 (see -h)" >&2; exit 1 ;;
+  esac
+done
+
+find_latest_local_tar() {
+  local dl="${HOME}/Downloads"
+  local -a candidates=()
+  while IFS= read -r -d '' f; do candidates+=("$f"); done < <(find .  -maxdepth 1 -type f -name 'ventoy-*-linux.tar.gz' -print0 2>/dev/null)
+  while IFS= read -r -d '' f; do candidates+=("$f"); done < <(find "$dl" -maxdepth 1 -type f -name 'ventoy-*-linux.tar.gz' -print0 2>/dev/null)
+  ((${#candidates[@]}==0)) && return 1
+  printf '%s\n' "${candidates[@]}" | sort -V | tail -n 1
+}
+
+download_latest_from_github() {
+  if ! need_cmd curl; then
+    echo -e "${YELLOW}curl not available; cannot fetch online.${RESET}" >&2
+    return 1
+  fi
+  local api='https://api.github.com/repos/ventoy/Ventoy/releases/latest'
+  echo -e "${GREEN}Querying GitHub for latest Ventoy release...${RESET}" >&2
+  local json
+  if ! json=$(curl -fsSL --connect-timeout 5 --max-time 30 "$api"); then
+    echo -e "${YELLOW}No internet or GitHub unavailable. Online fetch skipped.${RESET}" >&2
+    return 1
+  fi
+  local asset_url=""
+  if need_cmd jq; then
+    asset_url=$(printf '%s' "$json" | jq -r '.assets[]?.browser_download_url | select(test("linux\\.tar\\.gz$"))' | sort -V | tail -n 1)
+  else
+    asset_url=$(printf '%s\n' "$json" \
+      | grep -Eo '"browser_download_url"[[:space:]]*:[[:space:]]*"[^"]+"' \
+      | sed -E 's/^"browser_download_url"[[:space:]]*:[[:space:]]*"//; s/"$//' \
+      | grep 'linux\.tar\.gz$' \
+      | sort -V | tail -n 1)
+  fi
+  if [[ -z "$asset_url" ]]; then
+    echo -e "${YELLOW}Could not find linux tar.gz asset in latest release.${RESET}" >&2
+    return 1
+  fi
+  local filename; filename=$(basename "$asset_url")
+  local dest="${HOME}/Downloads/${filename}"
+  mkdir -p "${HOME}/Downloads"
+  if [[ -f "$dest" ]]; then
+    echo -e "${GRAY}Latest tar already exists:${RESET} ${dest}" >&2
+    printf '%s\n' "$dest"
+    return 0
+  fi
+  echo -e "${BLUE}Downloading:${RESET} ${asset_url}" >&2
+  if curl -fsSL --connect-timeout 5 --max-time 600 -o "$dest" "$asset_url"; then
+    echo -e "${GREEN}Saved to:${RESET} ${dest}" >&2
+    printf '%s\n' "$dest"
+    return 0
+  else
+    echo -e "${YELLOW}Download failed.${RESET}" >&2
+    return 1
+  fi
+}
+
+ventoy_tar=""
+if ! ventoy_tar=$(download_latest_from_github); then
+  if ventoy_tar=$(find_latest_local_tar); then
+    echo -e "${GREEN}Using local Ventoy package:${RESET} ${ventoy_tar}"
+  else
+    echo -e "${RED_BOLD}No Ventoy package available.${RESET}"
+    echo -e "Place ${BOLD}ventoy-*-linux.tar.gz${RESET} in ${BOLD}./${RESET} or ${BOLD}~/Downloads${RESET} and run again."
+    exit 1
+  fi
+fi
+
+if ! tar -tzf "$ventoy_tar" >/dev/null 2>&1; then
+  echo -e "${YELLOW}Archive seems corrupted:${RESET} $ventoy_tar" >&2
+  if ventoy_tar2=$(download_latest_from_github); then
+    ventoy_tar="$ventoy_tar2"
+    if ! tar -tzf "$ventoy_tar" >/dev/null 2>&1; then
+      echo -e "${RED_BOLD}Downloaded archive also failed integrity check.${RESET}" >&2
+      exit 1
+    fi
+  else
+    echo -e "${RED_BOLD}No valid archive available (offline & local file invalid).${RESET}" >&2
+    exit 1
+  fi
+fi
+
+TMPDIR=$(mktemp -d)
+trap 'rm -rf "$TMPDIR" ; echo -e "\nAnulowano."; exit 130' INT TERM
+trap 'rm -rf "$TMPDIR"' EXIT
+tar -xzf "$ventoy_tar" -C "$TMPDIR"
+
+ventoy_sh=$(find "$TMPDIR" -type f -name "Ventoy2Disk.sh" -print -quit 2>/dev/null || true)
+if [[ -z "$ventoy_sh" || ! -r "$ventoy_sh" ]]; then
+  echo -e "${RED_BOLD}Ventoy2Disk.sh not found/readable after extraction.${RESET}" >&2
+  exit 1
+fi
+chmod +x "$ventoy_sh" 2>/dev/null || true
+
+validate_device_is_usb() {
+  local dev="$1"
+  [[ -b "$dev" ]] || { echo -e "${RED_BOLD}Not a block device:${RESET} $dev" >&2; exit 1; }
+  local base; base=$(basename "$dev")
+  local tran; tran=$(lsblk -dn -o TRAN "/dev/$base" 2>/dev/null || echo "")
+  [[ "$tran" == "usb" ]] || { echo -e "${RED_BOLD}$dev is not a USB device (${tran:-none}).${RESET}"; exit 1; }
+  local root_src; root_src=$(findmnt -no SOURCE / || true)
+  if [[ -n "$root_src" ]]; then
+    local root_base; root_base=$(lsblk -no PKNAME "$root_src" 2>/dev/null || basename "$root_src")
+    [[ "$root_base" == "$base" ]] && { echo -e "${RED_BOLD}Refusing to operate on the system disk (${dev}).${RESET}"; exit 1; }
+  fi
+  if lsblk -rno NAME,MOUNTPOINT "/dev/$base" | awk 'NF>1 && $2 ~ /^\// {exit 0} END{exit 1}'; then
+    echo -e "${RED_BOLD}$dev has mounted partitions. Unmount them and try again.${RESET}"
+    exit 1
+  fi
+}
+
+select_usb_device() {
+  mapfile -t entries < <(
+    lsblk -dn -o NAME,TYPE,TRAN,SIZE,MODEL,SERIAL \
+    | awk '$2=="disk" && $3=="usb" {printf "/dev/%s  \033[1;32m[USB]\033[0m  %s  %s  %s\n",$1,$4,$5,$6}'
+  )
+  if ((${#entries[@]}==0)); then
+    echo -e "${RED_BOLD}No USB disks detected.${RESET}" >&2
+    exit 1
+  fi
+  if (( AUTO==1 )) && ((${#entries[@]}==1)); then
+    printf '%s\n' "${entries[0]}" | awk '{print $1}'
+    return 0
+  fi
+  if [[ -n "${TARGET_DEV}" ]]; then
+    printf '%s\n' "${TARGET_DEV}"
+    return 0
+  fi
+  if ! need_cmd fzf; then
+    if is_apt_like; then
+      echo "Multiple USB disks found and 'fzf' is not installed."
+      if offer_apt_install fzf; then
+        :
+      else
+        echo -e "Install fzf or specify device with -d /dev/sdX." >&2
+        exit 1
+      fi
+    else
+      echo -e "${YELLOW}Multiple USB disks found and 'fzf' is not installed.${RESET}" >&2
+      echo -e "Install fzf or specify device with -d /dev/sdX." >&2
+      exit 1
+    fi
+  fi
+  printf "%s\n" "${entries[@]}" | fzf -e --cycle --ansi --prompt="USB > " --height=70% --reverse | awk '{print $1}'
+}
+
+if [[ -z "$TARGET_DEV" ]]; then
+  TARGET_DEV=$(select_usb_device || true)
+  [[ -n "$TARGET_DEV" ]] || { echo -e "${YELLOW}Aborted.${RESET}"; exit 0; }
+fi
+validate_device_is_usb "$TARGET_DEV"
+[[ -b "$TARGET_DEV" ]] || { echo -e "${RED_BOLD}Not a block device:${RESET} $TARGET_DEV" >&2; exit 1; }
+
+V_OPTS=()
+(( SECURE==1 )) && V_OPTS+=("-s")
+[[ "$STYLE" == "gpt" ]] && V_OPTS+=("-g")
+[[ -n "$RESERVE" ]] && V_OPTS+=("-r" "$RESERVE")
+[[ -n "$LABEL"   ]] && V_OPTS+=("-L" "$LABEL")
+
+action_desc="install (-i)"
+[[ "$CMD" == "-I" ]] && action_desc="force install (-I)"
+[[ "$CMD" == "-u" ]] && action_desc="update (-u)"
+
+echo -e ""
+echo -e " ${INVERTED}SUMMARY${RESET}"
+echo -e "   Ventoy package : ${ventoy_tar}"
+echo -e "   Script         : ${ventoy_sh}"
+echo -e "   Target device  : ${BOLD}${TARGET_DEV}${RESET}"
+echo -e "   Action         : ${BOLD}${action_desc}${RESET}"
+[[ ${#V_OPTS[@]} -gt 0 ]] && echo -e "   Options        : ${BOLD}${V_OPTS[*]}${RESET}"
+echo -e ""
+if [[ "$CMD" == "-i" || "$CMD" == "-I" ]]; then
+  echo -e " ${RED_BOLD}WARNING:${RESET} This will ${BOLD}FORMAT${RESET} ${TARGET_DEV}. All data on this USB drive will be lost."
+fi
+echo -e ""
+
+if (( CONFIRM==1 )); then
+  read -r -p "$(echo -e ${YELLOW}Type YES to proceed:${RESET} ) " confirm
+  [[ "${confirm}" == "YES" ]] || { echo -e "${YELLOW}Aborted.${RESET}"; exit 0; }
+fi
+
+echo -e "${BLUE}Running:${RESET} ${SUDO:+sudo }sh \"${ventoy_sh}\" ${CMD} ${V_OPTS[*]:-} ${TARGET_DEV}"
+${SUDO} sh "${ventoy_sh}" "${CMD}" "${V_OPTS[@]}" "${TARGET_DEV}"
+
+echo -e ""
+echo -e "${GREEN}${BOLD}Done.${RESET} Copy your ISO/WIM/IMG/VHD(X) files to the first partition."
