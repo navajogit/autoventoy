@@ -24,7 +24,7 @@ You’ll still be asked to confirm the target USB before anything destructive ha
     curl -fsSL "https://raw.githubusercontent.com/navajogit/autoventoy/main/autoventoy" | bash
 ```
 
-This installs Ventoy **with Secure Boot support** (`-s`). - Works even if Secure Boot is **enabled in BIOS/UEFI**.  
+This installs Ventoy **with Secure Boot support** (`-s`). - Works even if Secure Boot is **enabled in BIOS/UEFI** (by default it's enabled on every hardware).
 - On first boot you’ll just need to **accept the Ventoy key once**.  
 - After that, all ISOs boot normally, no BIOS changes required.  
 - If your PC already has Secure Boot disabled, the stick still works fine.
@@ -230,7 +230,7 @@ This resets the stick to normal.
 ### Removing the Ventoy Secure Boot key from PC
 
 When you install Ventoy with the default Secure Boot option, the first time you boot from that USB your computer asks you to accept a Ventoy “key” (a small certificate).  
-This is normal and harmless — it’s just the way Secure Boot allows Ventoy to run.  
+This is normal and harmless — it’s just the way to run Ventoy with Secure Boot enabled.  
 
 But maybe later you decide you don’t want that key on your computer anymore.  
 Deleting it is easy — Ventoy provides a special ISO file just for that.  
