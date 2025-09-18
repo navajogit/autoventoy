@@ -170,7 +170,9 @@ But maybe later you decide you don’t want that key on your computer anymore.
 Deleting it is easy — Ventoy provides a special ISO file just for that.  
 
 **Step by step (simple version):**
-1. Go to the official Ventoy site and download the ISO called something like *“Ventoy Secure Boot Key Removal”*.  
+1. Download the ISO that removes the Ventoy Secure Boot key:  
+   - From GitHub: [DeleteVentoySecureBootKey release v1.0](https://github.com/ventoy/DeleteVentoySecureBootKey/releases/tag/v1.0)  
+   - Or from the official docs: [ventoy.net delete key page](https://www.ventoy.net/en/doc_delete_key.html)  
 2. Copy that ISO file onto your Ventoy USB stick (just like you copy movies or music).  
 3. Restart your computer and boot from the Ventoy USB stick.  
 4. In the Ventoy menu that appears, choose the ISO you just copied.  
