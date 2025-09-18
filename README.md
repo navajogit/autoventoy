@@ -65,11 +65,29 @@ This script automates all of it, does sanity checks, and helps you avoid wiping 
 
 ## Default settings
 
-- Action: install (`-i`).  
-- Secure Boot: **ON** (`-s`).  
-- Partition table: **MBR**.  
+By default the script runs Ventoy with:
 
-You can change this with options:  
+- **Action: install (`-i`)** – this means the USB stick will be **completely formatted and Ventoy will be installed from scratch**. Any data on the stick will be erased. Use this when preparing a new Ventoy stick.  
+
+- **Secure Boot: ON (`-s`)** – this tells Ventoy to include **support for Secure Boot systems**. If Secure Boot is enabled on your computer, you’ll need to accept a Ventoy certificate the first time you boot. If Secure Boot is disabled, nothing breaks — the stick still boots fine. This default helps in situations where you can’t disable Secure Boot (e.g. BIOS password locked), so you can still boot Linux recovery tools or installers.  
+
+- **Partition table: MBR** – Ventoy will create an **MBR (Master Boot Record) partition table** on the USB.  
+  - **Pros:** maximum compatibility with old BIOS systems and UEFI machines, works on most PCs.  
+  - **Cons:** can’t properly handle drives larger than 2 TB, and is technically an older standard.  
+  - **Alternative: GPT** – use `--gpt` if your USB is very large (>2 TB) or you only care about modern UEFI hardware. GPT is cleaner and more flexible, but very old BIOS-only PCs might not boot from it.  
+
+---
+
+### Why these defaults?
+
+- **Install (`-i`)** ensures you always get a clean Ventoy setup.  
+- **Secure Boot ON (`-s`)** gives you more flexibility: it doesn’t block anything, and it lets you boot even on locked-down machines.  
+- **MBR** gives maximum compatibility across both old and new systems.  
+
+For advanced needs you can switch to `-u` (update instead of install), `--no-secure`, or `--gpt`. But for most users, the defaults are the safest and most universal choice.
+
+
+**You can change this with options:**  
 - `--no-secure` disable Secure Boot.  
 - `--gpt` use GPT instead of MBR.  
 - `--reserve SIZE_MB` reserve extra space.  
