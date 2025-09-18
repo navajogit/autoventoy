@@ -153,6 +153,11 @@ Here are a few methods:
   5. Then create a new FAT32 partition using all available space.  
   6. Apply changes.  
 
+ℹ**Note:** Ventoy sometimes puts the filesystem starting right at sector 0 (no partition table).  
+That can confuse partition managers — they may show the stick as “read-only” or “corrupted.”  
+The fix is simple: just create a new partition table in GParted (`Device → Create Partition Table`).  
+This resets the stick to normal.  
+
 ---
 
 ### On Windows
@@ -164,8 +169,27 @@ Here are a few methods:
   4. After all partitions are gone, right-click the unallocated space and choose **New Simple Volume**.  
   5. Format it as FAT32 or exFAT.  
 
+- **If the stick shows as read-only / you can’t delete partitions**  
+  Sometimes after Ventoy Windows marks the stick as write-protected. You can clear this with `diskpart`:  
+  1. Run `cmd` as Administrator.  
+  2. Type `diskpart` and press Enter.  
+  3. `list disk` → find your USB number.  
+  4. `select disk X` (replace `X` with your USB disk number).  
+  5. `attributes disk clear readonly`  
+  6. Now try deleting partitions in Disk Management again.  
+
 - **Using a third-party tool (e.g. Rufus, MiniTool, AOMEI)**  
   Tools like Rufus or MiniTool Partition Wizard can also wipe the USB and create a new partition table. Choose **MBR + FAT32** for maximum compatibility.  
+
+---
+
+### Summary
+
+- **Quick format is not enough.** You need to wipe or recreate the partition table.  
+- **Linux fix is easiest:** GParted → *Device → Create Partition Table (msdos)* → new FAT32 partition.  
+- **Windows fix may need extra steps:** use Disk Management, and if the drive is read-only use `diskpart` to clear the attribute.  
+- In rare cases, a stick can really fail (hardware lock in read-only mode). Then only manufacturer tools or warranty replacement can help.  
+
 
 ---
 ### Removing the Ventoy Secure Boot key (explained simply)
