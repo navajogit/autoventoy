@@ -10,8 +10,8 @@ That way, malware hiding in the boot process can’t easily start.
 - With Ventoy: if you created the USB **without `-s` option**, Secure Boot must be turned off to boot.  
 - Even if you used Ventoy **with `-s`**, sometimes it’s easier to turn Secure Boot off permanently after Linux installation, because hardware drivers usually work more smoothly that way.
 
-**Important:** **Disabling Secure Boot will **not** make your PC unsafe in normal everyday use.  
-It just means you can install and boot Linux, or use Ventoy freely. You can always turn it back on later.**
+**Important: Disabling Secure Boot will NOT make your PC unsafe in normal everyday use.**  
+**It just means you can install and boot Linux, or use Ventoy freely. You can always turn it back on later.**
 
 ---
 
