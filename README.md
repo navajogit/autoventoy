@@ -162,7 +162,7 @@ Examples:
 
 ---
 
-## How to uninstall Ventoy from a USB stick
+# How to uninstall Ventoy from a USB stick
 
 Ventoy doesn’t really have an “uninstaller.” Once installed, it rewrites the partition table of the USB stick.  
 So if you just do a quick format, Ventoy will still be there. To completely remove it you need to wipe and recreate the partition table.  
@@ -227,7 +227,7 @@ This resets the stick to normal.
 
 
 ---
-### Removing the Ventoy Secure Boot key (explained simply)
+### Removing the Ventoy Secure Boot key from PC
 
 When you install Ventoy with the default Secure Boot option, the first time you boot from that USB your computer asks you to accept a Ventoy “key” (a small certificate).  
 This is normal and harmless — it’s just the way Secure Boot allows Ventoy to run.  
@@ -248,17 +248,9 @@ That’s it — the Ventoy key will be removed from your computer’s Secure Boo
 
 So in plain words: if you ever said “yes” to the Ventoy key when booting with Secure Boot on, and you want to undo that decision, you just boot Ventoy again with the special ISO and it cleans it up for you.
 
-
 ---
 
-### TL;DR
-
-To “uninstall” Ventoy, you need to **wipe the partition table** and create a new one (usually MBR with FAT32). After that the USB stick is just a normal drive again.
-
-
----
-
-## Dependencies
+# Dependencies
 
 On Debian/Ubuntu most of these are preinstalled:  
 
@@ -271,7 +263,7 @@ The script can suggest installing missing packages with `apt` on Debian-like sys
 
 ---
 
-## Bottom line
+# Bottom line
 
 Run it with no options, pick your USB, type `YES`, and you’re done.  
 Ventoy will be installed in seconds and your stick will boot any ISO you drop onto it.  
