@@ -1,41 +1,63 @@
 # autoventoy - quick Ventoy installer for USB (Debian-like / Linux)
 Automatically install the latest Ventoy USB bootloader on a chosen USB stick.
 
-**Ventoy is an open source multi image bootloader that gives your USB stick a big advantage over other boot tools**: 
-- you’re not locked to a single ISO image. Instead, you can copy as many ISOs as you want — Linux distros, Windows installers in different versions, recovery utilities — all at once. ISO/WIM/IMG/VHD(x)/EFI files
-- At boot, Ventoy shows you an interactive menu where you just pick what you want to run or install.
+**Ventoy is an open source multi-image bootloader that gives your USB stick a big advantage over other boot tools**:  
+- you’re not locked to a single ISO image. Instead, you can copy as many ISOs as you want — Linux distros, Windows installers in different versions, recovery utilities — all at once (ISO/WIM/IMG/VHD(x)/EFI files).  
+- At boot, Ventoy shows you an interactive menu where you just pick what you want to run or install.  
 - **The best part:** the USB stick still works like a normal drive. You can keep your personal files and documents alongside the ISOs, so one device doubles as portable storage **and** a multi-boot installer.  
 MORE at: https://www.ventoy.net/
 
-**Normally installing Ventoy is a pain in the butt (the process isn’t obvious and the steps are clunky) BUT**: . This script is an auto-installer that makes it effortless — in just a few seconds you have Ventoy ready to go. After that, all you do is drag ISO files onto the stick.
+**Normally installing Ventoy is a pain in the butt (the process isn’t obvious and the steps are clunky) BUT**: this script is an auto-installer that makes it effortless — in just a few seconds you have Ventoy ready to go. After that, all you do is drag ISO files onto the stick.
+
+---
 
 ## REMOTE RUN (no cloning)
 
-If you don’t want to clone or download anything locally, run the script straight from GitHub. You’ll still be asked to confirm the target USB before anything destructive happens.
-
-**Use this one-liner (with default Secure Boot support enabled):**
-
-```
-curl -fsSL "https://raw.githubusercontent.com/navajogit/autoventoy/main/autoventoy" | bash
-```
-
-**Or use this one-liner (without Secure Boot support, skips the default `-s` option):**
-
-```
-curl -fsSL "https://raw.githubusercontent.com/navajogit/autoventoy/main/autoventoy" | bash -s -- --no-secure
-```
-**MORE OPTIONS:**
-
-```
-curl -fsSL "https://raw.githubusercontent.com/navajogit/autoventoy/main/autoventoy" | bash -s -- -h
-```
-
-**Notes:**
-- `-fsSL` makes `curl` fail fast and stay quiet on errors.
-- Always read remote scripts before piping to `bash` if you care about security.
-- The script will interactively ask you to choose the USB drive from the list (or you can pass `-d /dev/sdX`).
+If you don’t want to clone or download anything locally, run the script straight from GitHub.  
+You’ll still be asked to confirm the target USB before anything destructive happens.
 
 ---
+
+### With Secure Boot support (default, recommended)
+
+```
+    curl -fsSL "https://raw.githubusercontent.com/navajogit/autoventoy/main/autoventoy" | bash
+```
+
+This installs Ventoy **with Secure Boot support** (`-s`). - Works even if Secure Boot is **enabled in BIOS/UEFI**.  
+- On first boot you’ll just need to **accept the Ventoy key once**.  
+- After that, all ISOs boot normally, no BIOS changes required.  
+- If your PC already has Secure Boot disabled, the stick still works fine.
+
+---
+
+### Without Secure Boot support
+
+```
+    curl -fsSL "https://raw.githubusercontent.com/navajogit/autoventoy/main/autoventoy" | bash -s -- --no-secure
+```
+
+This installs Ventoy **without Secure Boot support**.  
+- Simpler technically, but it means you must **manually disable Secure Boot in BIOS/UEFI** to boot from this stick.  
+- See here for step-by-step guide: [How to disable Secure Boot](./How_to_disable_secure_boot.md).
+
+---
+
+### More options
+
+```
+    curl -fsSL "https://raw.githubusercontent.com/navajogit/autoventoy/main/autoventoy" | bash -s -- -h
+```
+
+---
+
+### Notes
+- `-fsSL` makes `curl` fail fast and stay quiet on errors.  
+- Always read remote scripts before piping to `bash` if you care about security.  
+- The script will interactively ask you to choose the USB drive from the list (or you can pass `-d /dev/sdX`).  
+
+---
+
 
 ## LOCAL INSTALL (put the script in your PATH)
 
@@ -83,20 +105,23 @@ This script automates all of it, does sanity checks, and helps you avoid wiping 
 
 By default the script runs Ventoy with:
 
-- **Action: install (`-i`)** – this means the USB stick will be **completely formatted and Ventoy will be installed from scratch**. Any data on the stick will be erased. Use this when preparing a new Ventoy stick.  
+- **Action: install** – the USB stick will be completely formatted and Ventoy will be installed from scratch. All data on the stick will be erased. Use this when preparing a new Ventoy stick.  
 
-- **Secure Boot: ON (`-s`)** – this tells Ventoy to include **support for Secure Boot systems**.  
-  If Secure Boot is enabled on your computer, you’ll need to accept a Ventoy certificate the first time you boot.  
-  If Secure Boot is disabled, nothing breaks — the stick will still boot normally.  
-  This default is useful if you can’t disable Secure Boot (for example, when the BIOS is locked with a password), so you can still boot Linux recovery tools or live installers.  
+- **Secure Boot support enabled (default)** – the USB will work even if Secure Boot is turned on in the BIOS.  
+  The first time you boot from it, the system will ask you to accept the Ventoy certificate, and after that it will boot normally.  
+  If Secure Boot is already disabled, the stick will also work fine.  
 
-- **Note:** Ventoy itself works fine with Secure Boot, but after installing a Linux distribution on your hard drive, you will usually need to disable Secure Boot in the BIOS. Many Linux systems don’t run reliably with Secure Boot enabled on installed hardware.
+  **Note:** Ventoy itself works fine with Secure Boot, but **after installing a Linux distribution on your hard drive you will usually need to disable Secure Boot in the BIOS**, because many Linux systems do not run reliably with Secure Boot enabled once installed.  
 
+  See here for a step-by-step guide: [How to disable Secure Boot](./How_to_disable_secure_boot.md).  
 
-- **Partition table: MBR** – Ventoy will create an **MBR (Master Boot Record) partition table** on the USB.  
+  Secure Boot does not need to be disabled if you only want to boot live ISOs from the Ventoy USB.  
+
+- **Partition table: MBR (default)** – Ventoy will create an MBR (Master Boot Record) partition table on the USB.  
   - **Pros:** maximum compatibility with old BIOS systems and UEFI machines, works on most PCs.  
-  - **Cons:** can’t properly handle drives larger than 2 TB, and is technically an older standard.  
-  - **Alternative: GPT** – use `--gpt` if your USB is very large (>2 TB) or you only care about modern UEFI hardware. GPT is cleaner and more flexible, but very old BIOS-only PCs might not boot from it.  
+  - **Cons:** cannot handle drives larger than 2 TB and is an older standard.  
+  - **Alternative: GPT** – use `--gpt` if your USB is larger than 2 TB or if you only plan to use it on modern UEFI hardware. GPT is cleaner and more flexible, but very old BIOS-only PCs might not boot from it.  
+
 
 ---
 
