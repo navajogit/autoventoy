@@ -1,4 +1,4 @@
-# autoventoy — quick Ventoy installer for USB (Debian-like / Linux)
+# autoventoy - quick Ventoy installer for USB (Debian-like / Linux)
 Automatically install the latest Ventoy USB bootloader on a chosen USB stick.
 
 **Ventoy is an open source multi image bootloader that gives your USB stick a big advantage over other boot tools**: 
